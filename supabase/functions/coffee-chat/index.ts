@@ -20,7 +20,7 @@ serve(async (req) => {
       );
     }
 
-    // Backward compatibility: support both AI_API_KEY and LOVABLE_API_KEY
+    // Backward compatibility: support both AI_API_KEY and legacy API key
     const AI_API_KEY = Deno.env.get("AI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
     if (!AI_API_KEY) {
       console.error("AI_API_KEY is not configured");
