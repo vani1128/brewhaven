@@ -54,14 +54,10 @@ The edge function needs access to your AI API key. This must be set in Supabase,
 #### Using Supabase CLI:
 
 ```bash
-supabase secrets set AI_API_KEY=your-api-key-here
+supabase secrets set AI_API_KEY=your-openai-api-key-here
 ```
 
-Or if using the legacy key name:
-
-```bash
-supabase secrets set LOVABLE_API_KEY=your-api-key-here
-```
+Replace `your-openai-api-key-here` with your actual OpenAI API key (starts with `sk-...`).
 
 #### Using Supabase Dashboard:
 
@@ -72,9 +68,10 @@ supabase secrets set LOVABLE_API_KEY=your-api-key-here
 5. Click **Save**
 
 **Important**: 
-- The secret name must be exactly `AI_API_KEY` or `LOVABLE_API_KEY`
+- The secret name must be exactly `AI_API_KEY`
 - This is different from Vercel environment variables!
 - This secret is only accessible by your Supabase Edge Functions
+- Use your OpenAI API key from https://platform.openai.com/api-keys
 
 ### Step 3: Verify Edge Function is Working
 
@@ -115,7 +112,7 @@ These are NOT the secrets needed by the edge function!
 
 3. **Verify secret is set**:
    - Go to Supabase Dashboard → Project Settings → Edge Functions → Secrets
-   - Make sure `AI_API_KEY` or `LOVABLE_API_KEY` is listed
+   - Make sure `AI_API_KEY` is listed with your OpenAI API key
 
 4. **Test the endpoint directly**:
    - Open browser console (F12)
@@ -153,70 +150,43 @@ After deployment, test the chatbot:
 
 ## Getting Your AI API Key
 
-The chatbot currently uses **Lovable AI Gateway**. Here's how to get your API key:
+The chatbot uses **OpenAI** directly. Here's how to get your API key:
 
-### Option 1: Get Lovable API Key (Current Setup)
-
-1. **Go to Lovable.dev**:
-   - Visit https://lovable.dev
-   - Sign in or create an account
-
-2. **Access AI Gateway**:
-   - Go to your project settings
-   - Look for "AI Gateway" or "API Keys" section
-   - Or visit: https://lovable.dev/ai-gateway (if available)
-
-3. **Generate/Copy API Key**:
-   - If you see an API key, copy it
-   - If not, click "Generate API Key" or "Create Key"
-   - Copy the generated key (keep it secure!)
-
-4. **Set in Supabase**:
-   - Go to Supabase Dashboard → Project Settings → Edge Functions → Secrets
-   - Add secret: `AI_API_KEY` = (your copied key)
-
-### Option 2: Use OpenAI Directly (Alternative)
-
-If you prefer using OpenAI directly instead of Lovable Gateway:
+### Get OpenAI API Key
 
 1. **Get OpenAI API Key**:
    - Go to https://platform.openai.com/api-keys
    - Sign in or create account
-   - Click "Create new secret key"
-   - Copy the key
+   - Click **"Create new secret key"**
+   - **Copy the key immediately** (you won't be able to see it again!)
+   - The key will look like: `sk-...` (a long string)
 
-2. **Update Edge Function**:
-   - Modify `supabase/functions/coffee-chat/index.ts`
-   - Change the endpoint from `https://ai.gateway.lovable.dev/v1/chat/completions` to `https://api.openai.com/v1/chat/completions`
-   - Update the model name if needed
+2. **Set in Supabase**:
+   - Go to Supabase Dashboard → **Project Settings** → **Edge Functions** → **Secrets**
+   - Click **"Add a new secret"**
+   - Name: `AI_API_KEY`
+   - Value: (paste your OpenAI API key)
+   - Click **Save**
 
-3. **Set in Supabase**:
-   - Add secret: `AI_API_KEY` = (your OpenAI key)
+### OpenAI Model Information
 
-### Option 3: Use Other AI Providers
+The chatbot currently uses `gpt-3.5-turbo` which is:
+- ✅ Fast and responsive
+- ✅ Cost-effective ($0.002 per 1K tokens)
+- ✅ Good quality for chat applications
 
-You can also use:
-- **Anthropic Claude**: Get key from https://console.anthropic.com/
-- **Google Gemini**: Get key from https://makersuite.google.com/app/apikey
-- **Any OpenAI-compatible API**: Update the endpoint in the edge function
+**Optional**: You can switch to `gpt-4` for better quality (more expensive):
+- Edit `supabase/functions/coffee-chat/index.ts`
+- Change `model: "gpt-3.5-turbo"` to `model: "gpt-4"`
+- Costs: $0.03 per 1K tokens (15x more expensive)
 
-### Troubleshooting: Can't Find Lovable API Key?
+### OpenAI Pricing
 
-If you're having trouble finding the Lovable API key:
+- **gpt-3.5-turbo**: $0.002 per 1K tokens (~750 words)
+- **gpt-4**: $0.03 per 1K tokens
+- **gpt-4-turbo**: $0.01 per 1K tokens
 
-1. **Check Your Project**: 
-   - Make sure you're logged into the Lovable project that was used to create this app
-   - The API key might be in project settings
-
-2. **Check Email/Notifications**:
-   - Lovable might have sent the API key via email when you first created the project
-
-3. **Contact Lovable Support**:
-   - Reach out to Lovable support for help locating your API key
-   - Or check their documentation: https://docs.lovable.dev
-
-4. **Alternative**: 
-   - Switch to OpenAI or another provider using Option 2 or 3 above
+A typical chat conversation uses about 500-1000 tokens, so costs are minimal for most use cases.
 
 ### Important Notes:
 

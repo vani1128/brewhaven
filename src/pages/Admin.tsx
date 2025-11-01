@@ -662,7 +662,7 @@ export default function Admin() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="price">Price ($)</Label>
+                        <Label htmlFor="price">Price (₹)</Label>
                         <Input
                           id="price"
                           type="number"
@@ -744,7 +744,7 @@ export default function Admin() {
                       <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
                         <span>{coffee.type}</span>
                         {coffee.price !== undefined && (
-                          <span className="font-semibold text-primary">${coffee.price.toFixed(2)}</span>
+                          <span className="font-semibold text-primary">₹{coffee.price.toFixed(2)}</span>
                         )}
                         {coffee.inventory !== undefined && (
                           <span>Stock: {coffee.inventory}</span>

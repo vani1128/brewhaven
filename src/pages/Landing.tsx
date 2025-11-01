@@ -257,7 +257,7 @@ export default function Landing() {
                   <CardContent>
                     <div className="flex items-center justify-between">
                       <span className="text-2xl font-bold text-primary">
-                        ${product.price.toFixed(2)}
+                        ₹{product.price.toFixed(2)}
                       </span>
                       <Badge variant="outline">{product.type}</Badge>
                     </div>

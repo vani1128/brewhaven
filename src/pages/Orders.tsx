@@ -172,7 +172,7 @@ export default function Orders() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold">${order.total_amount.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">₹{order.total_amount.toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">
                         {order.payment_method}
                       </p>
@@ -202,11 +202,11 @@ export default function Orders() {
                           <div className="flex-1">
                             <p className="font-semibold">{item.coffee?.name}</p>
                             <p className="text-sm text-muted-foreground">
-                              Qty: {item.quantity} × ${item.price.toFixed(2)}
+                              Qty: {item.quantity} × ₹{item.price.toFixed(2)}
                             </p>
                           </div>
                           <p className="font-semibold">
-                            ${item.subtotal.toFixed(2)}
+                            ₹{item.subtotal.toFixed(2)}
                           </p>
                         </div>
                       ))}

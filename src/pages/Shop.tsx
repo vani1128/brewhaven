@@ -142,7 +142,7 @@ export default function Shop() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <Coffee className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl font-bold">Coffee Shop</h1>
+              <h1 className="text-3xl font-bold">BrewHaven</h1>
             </div>
             <Button
               variant="outline"
@@ -251,7 +251,7 @@ export default function Shop() {
                 <CardContent className="flex-1">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-2xl font-bold text-primary">
-                      ${coffee.price.toFixed(2)}
+                      ₹{coffee.price.toFixed(2)}
                     </span>
                     <Badge variant="outline">{coffee.type}</Badge>
                   </div>

@@ -20,12 +20,12 @@ serve(async (req) => {
       );
     }
 
-    // Backward compatibility: support both AI_API_KEY and legacy API key
-    const AI_API_KEY = Deno.env.get("AI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
+    // Get OpenAI API key
+    const AI_API_KEY = Deno.env.get("AI_API_KEY");
     if (!AI_API_KEY) {
       console.error("AI_API_KEY is not configured");
       return new Response(
-        JSON.stringify({ error: "AI service not configured" }),
+        JSON.stringify({ error: "AI service not configured. Please set AI_API_KEY in Supabase secrets." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -62,18 +62,20 @@ Always be helpful and encouraging in guiding users to find their perfect coffee!
       { role: "user", content: message }
     ];
 
-    console.log("Calling AI Gateway...");
+    console.log("Calling OpenAI API...");
     
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${AI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-3.5-turbo",
         messages: messages,
         stream: false,
+        temperature: 0.7,
+        max_tokens: 500,
       }),
     });
 

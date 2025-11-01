@@ -159,10 +159,10 @@ export default function Checkout() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="address">Street Address *</Label>
+                    <Label htmlFor="address">Complete Address *</Label>
                     <Input
                       id="address"
-                      placeholder="123 Main Street"
+                      placeholder="Enter your complete street address"
                       value={formData.shippingAddress}
                       onChange={(e) =>
                         setFormData({ ...formData, shippingAddress: e.target.value })
@@ -175,7 +175,7 @@ export default function Checkout() {
                       <Label htmlFor="city">City *</Label>
                       <Input
                         id="city"
-                        placeholder="New York"
+                        placeholder="Enter your city"
                         value={formData.shippingCity}
                         onChange={(e) =>
                           setFormData({ ...formData, shippingCity: e.target.value })
@@ -184,10 +184,10 @@ export default function Checkout() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="postalCode">Postal Code *</Label>
+                      <Label htmlFor="postalCode">Pin Code / Postal Code *</Label>
                       <Input
                         id="postalCode"
-                        placeholder="10001"
+                        placeholder="Enter your pin code"
                         value={formData.shippingPostalCode}
                         onChange={(e) =>
                           setFormData({ ...formData, shippingPostalCode: e.target.value })
@@ -197,11 +197,11 @@ export default function Checkout() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Label htmlFor="phone">Mobile Number *</Label>
                     <Input
                       id="phone"
                       type="tel"
-                      placeholder="+1 (555) 123-4567"
+                      placeholder="Enter your 10-digit mobile number"
                       value={formData.shippingPhone}
                       onChange={(e) =>
                         setFormData({ ...formData, shippingPhone: e.target.value })
@@ -271,14 +271,14 @@ export default function Checkout() {
                         <span>
                           {item.name} x {item.quantity}
                         </span>
-                        <span>${(item.price * item.quantity).toFixed(2)}</span>
+                        <span>₹{(item.price * item.quantity).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
                   <div className="border-t pt-4 space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Subtotal</span>
-                      <span>${totalPrice.toFixed(2)}</span>
+                      <span>₹{totalPrice.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span>Shipping</span>
@@ -286,7 +286,7 @@ export default function Checkout() {
                     </div>
                     <div className="flex justify-between text-lg font-bold pt-2 border-t">
                       <span>Total</span>
-                      <span>${totalPrice.toFixed(2)}</span>
+                      <span>₹{totalPrice.toFixed(2)}</span>
                     </div>
                   </div>
                   <Button
