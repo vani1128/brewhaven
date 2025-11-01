@@ -88,18 +88,24 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error, data } = await signIn(email, password);
         if (error) {
-          if (error.message.includes("Invalid login credentials")) {
+          if (error.message.includes("Invalid login credentials") || error.message.includes("Invalid email or password")) {
             toast({
               title: "Login Failed",
-              description: "Invalid email or password. Please try again.",
+              description: "Invalid email or password. Please check your credentials and try again.",
+              variant: "destructive",
+            });
+          } else if (error.message.includes("Email not confirmed")) {
+            toast({
+              title: "Email Not Verified",
+              description: "Please check your email and click the verification link before signing in.",
               variant: "destructive",
             });
           } else {
             toast({
               title: "Error",
-              description: error.message,
+              description: error.message || "Failed to sign in. Please try again.",
               variant: "destructive",
             });
           }
@@ -111,9 +117,9 @@ export default function Auth() {
           navigate("/");
         }
       } else {
-        const { error } = await signUp(email, password, fullName);
+        const { error, data } = await signUp(email, password, fullName);
         if (error) {
-          if (error.message.includes("User already registered")) {
+          if (error.message.includes("User already registered") || error.message.includes("already registered")) {
             toast({
               title: "Account Exists",
               description: "This email is already registered. Please sign in instead.",
@@ -122,16 +128,24 @@ export default function Auth() {
           } else {
             toast({
               title: "Error",
-              description: error.message,
+              description: error.message || "Failed to create account. Please try again.",
               variant: "destructive",
             });
           }
         } else {
-          toast({
-            title: "Account Created!",
-            description: "Welcome to BrewHaven!",
-          });
-          navigate("/");
+          // Check if email confirmation is required
+          if (data?.user && !data.session) {
+            toast({
+              title: "Account Created!",
+              description: "Please check your email to verify your account before signing in.",
+            });
+          } else {
+            toast({
+              title: "Account Created!",
+              description: "Welcome to BrewHaven!",
+            });
+            navigate("/");
+          }
         }
       }
     } catch (error) {
@@ -223,7 +237,7 @@ export default function Auth() {
                   <Input
                     id="fullName"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder="Enter your full name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     disabled={loading}
@@ -236,7 +250,7 @@ export default function Auth() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="you@example.com"
+                  placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
@@ -249,7 +263,7 @@ export default function Auth() {
                   <Input
                     id="password"
                     type="password"
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={loading}

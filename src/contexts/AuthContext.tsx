@@ -6,8 +6,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: { message: string } | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: { message: string } | null }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: { message: string } | null; data?: { user: User | null; session: Session | null } }>;
+  signIn: (email: string, password: string) => Promise<{ error: { message: string } | null; data?: { user: User | null; session: Session | null } }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: { message: string } | null }>;
   isAdmin: boolean;
@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -90,16 +90,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
 
-    return { error };
+    if (error) {
+      console.error("Sign up error:", error);
+    }
+
+    return { error, data };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    return { error };
+    if (error) {
+      console.error("Sign in error:", error);
+    }
+
+    return { error, data };
   };
 
   const signOut = async () => {
