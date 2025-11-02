@@ -28,16 +28,6 @@ export default function Landing() {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // Debug: Log admin status
-  useEffect(() => {
-    if (user && !authLoading) {
-      console.log("🔍 Admin Status:", {
-        userId: user.id,
-        email: user.email,
-        isAdmin: isAdmin
-      });
-    }
-  }, [user, isAdmin, authLoading]);
 
   useEffect(() => {
     loadFeaturedProducts();

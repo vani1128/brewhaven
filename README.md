@@ -47,15 +47,16 @@ npm run dev
 
 The app will be available at `http://localhost:8080`
 
-### Admin Setup
+### Backend Setup
 
-To access the admin dashboard:
+📖 **See `BACKEND_SETUP.md` for complete step-by-step backend setup guide**
 
-1. Run the SQL in `SETUP_ADMIN.sql` in Supabase SQL Editor (replace email with yours)
-2. Sign out and sign back in
-3. The "Admin" button will appear in navigation
-
-📖 See `ADMIN_QUICK_START.md` for detailed admin setup instructions
+Quick steps:
+1. Create Supabase project
+2. Run `FRESH_SETUP.sql` in Supabase SQL Editor
+3. Deploy edge function for chatbot
+4. Set environment variables
+5. Add admin role for your user
 
 ## Deployment
 
@@ -68,10 +69,9 @@ Deploy to any platform that supports Node.js:
 
 ### Before Deploying
 
-- ✅ Configure SMTP in Supabase (Settings → Auth → SMTP Settings)
-- ✅ Set environment variables in your hosting platform
+- ✅ Complete backend setup (see `BACKEND_SETUP.md`)
+- ✅ Set environment variables in Vercel/hosting platform
 - ✅ Update Supabase redirect URLs to your production domain
-- ✅ Run all database migrations from `supabase/migrations/`
 
 ## Project Structure
 
