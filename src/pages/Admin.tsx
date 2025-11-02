@@ -524,8 +524,9 @@ export default function Admin() {
         </div>
 
         {/* Coffee Management */}
-        <Card className="border-2">
-          <CardHeader>
+        {activeTab === "coffees" && (
+          <Card className="border-2">
+            <CardHeader>
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Coffee Management</CardTitle>
@@ -765,7 +766,7 @@ export default function Admin() {
               )}
             </div>
           </CardContent>
-        </Card>
+          </Card>
         )}
 
         {/* Order Management */}
