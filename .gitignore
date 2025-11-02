@@ -37,3 +37,7 @@ pnpm-lock.yaml
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary files
+.temp/
+temp/

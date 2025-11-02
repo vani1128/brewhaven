@@ -39,8 +39,6 @@ serve(async (req) => {
       { role: "user", content: message }
     ];
 
-    console.log('Calling DeepSeek API with messages:', JSON.stringify(messages));
-
     // Call DeepSeek API
     const deepseekResponse = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
@@ -64,7 +62,6 @@ serve(async (req) => {
     }
 
     const data = await deepseekResponse.json();
-    console.log('DeepSeek API response:', JSON.stringify(data));
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       throw new Error('Invalid response format from DeepSeek API');
@@ -96,3 +93,4 @@ serve(async (req) => {
     );
   }
 });
+
