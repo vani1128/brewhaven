@@ -16,7 +16,7 @@ interface Profile {
 }
 
 export default function Profile() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -146,6 +146,29 @@ export default function Profile() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Admin Panel Access */}
+          {isAdmin && (
+            <Card className="border-2 border-primary/20 bg-primary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Coffee className="h-5 w-5 text-primary" />
+                  Admin Access
+                </CardTitle>
+                <CardDescription>You have admin privileges to manage the coffee shop</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="default"
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                  onClick={() => navigate("/admin")}
+                >
+                  <Coffee className="h-4 w-4 mr-2" />
+                  Open Admin Panel
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4">

@@ -59,6 +59,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCoffee, setEditingCoffee] = useState<Coffee | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -72,10 +73,13 @@ export default function Admin() {
   });
 
   useEffect(() => {
-    let isMounted = true;
+    let cancelled = false;
 
-    const loadData = async () => {
+    async function loadData() {
       try {
+        setError(null);
+        setLoading(true);
+
         const [coffeesResult, categoriesResult, usersResult, chatsResult, coffeesCountResult] = await Promise.all([
           supabase.from("coffees").select("*").order("created_at", { ascending: false }),
           supabase.from("categories").select("*").order("name"),
@@ -84,25 +88,26 @@ export default function Admin() {
           supabase.from("coffees").select("*", { count: "exact", head: true }),
         ]);
 
-        if (!isMounted) return;
+        if (cancelled) return;
 
         if (coffeesResult.error) {
-          console.error("Error loading coffees:", coffeesResult.error);
-          throw coffeesResult.error;
+          throw new Error(`Failed to load coffees: ${coffeesResult.error.message}`);
         }
 
         if (categoriesResult.error) {
-          console.error("Error loading categories:", categoriesResult.error);
-          throw categoriesResult.error;
+          throw new Error(`Failed to load categories: ${categoriesResult.error.message}`);
         }
 
         setCoffees(coffeesResult.data || []);
         setCategories(categoriesResult.data || []);
-        setStats({
-          totalUsers: usersResult.count || 0,
-          totalChats: chatsResult.count || 0,
-          totalCoffees: coffeesCountResult.count || 0,
-        });
+
+        if (usersResult.count !== null && chatsResult.count !== null && coffeesCountResult.count !== null) {
+          setStats({
+            totalUsers: usersResult.count,
+            totalChats: chatsResult.count,
+            totalCoffees: coffeesCountResult.count,
+          });
+        }
 
         if (!categoriesResult.data || categoriesResult.data.length === 0) {
           toast({
@@ -111,28 +116,24 @@ export default function Admin() {
             variant: "destructive",
           });
         }
-      } catch (error) {
-        if (!isMounted) return;
-        console.error("Error loading data:", error);
-        toast({
-          title: "Error Loading Data",
-          description: error instanceof Error ? error.message : "Failed to load admin data. Please refresh the page.",
-          variant: "destructive",
-        });
+      } catch (err) {
+        if (cancelled) return;
+        const errorMessage = err instanceof Error ? err.message : "Failed to load admin data";
+        setError(errorMessage);
+        console.error("Error loading admin data:", err);
       } finally {
-        if (isMounted) {
+        if (!cancelled) {
           setLoading(false);
         }
       }
-    };
+    }
 
     loadData();
 
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [toast]);
 
   const loadCoffees = async () => {
     const { data, error } = await supabase
@@ -293,6 +294,27 @@ export default function Admin() {
 
   if (loading) {
     return <FullPageLoading />;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Error Loading Admin Panel</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button onClick={() => window.location.reload()} className="w-full">
+              Reload Page
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/")} className="w-full">
+              Go Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (

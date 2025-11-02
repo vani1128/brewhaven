@@ -93,8 +93,13 @@ export default function Landing() {
                   Profile
                 </Button>
                 {isAdmin && (
-                  <Button variant="ghost" onClick={() => navigate("/admin")}>
-                    Admin
+                  <Button 
+                    variant="default" 
+                    onClick={() => navigate("/admin")}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Coffee className="h-4 w-4 mr-2" />
+                    Admin Panel
                   </Button>
                 )}
                 <Button variant="outline" onClick={async () => {
