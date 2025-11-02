@@ -266,37 +266,39 @@ export default function Chat() {
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="container mx-auto max-w-4xl space-y-6">
           {messages.length === 0 && (
-            <div className="text-center py-12">
-              <Coffee className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold mb-2">Start Your Coffee Journey</h2>
-              <p className="text-muted-foreground mb-4">
-                Ask me anything about coffee! I can recommend drinks based on your taste.
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setInput("I want something strong and bold")}
-                >
-                  Strong & Bold
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setInput("I prefer sweet and creamy drinks")}
-                >
-                  Sweet & Creamy
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setInput("What's a good cold coffee for summer?")}
-                >
-                  Cold Coffee
-                </Button>
+            <>
+              <div className="text-center py-12">
+                <Coffee className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h2 className="text-2xl font-semibold mb-2">Start Your Coffee Journey</h2>
+                <p className="text-muted-foreground mb-4">
+                  Ask me anything about coffee! I can recommend drinks based on your taste.
+                </p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setInput("I want something strong and bold")}
+                  >
+                    Strong & Bold
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setInput("I prefer sweet and creamy drinks")}
+                  >
+                    Sweet & Creamy
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setInput("What's a good cold coffee for summer?")}
+                  >
+                    Cold Coffee
+                  </Button>
+                </div>
               </div>
-              {import.meta.env.DEV && <ChatDiagnostic />}
-            </div>
+              <ChatDiagnostic />
+            </>
           )}
 
           {messages.map((message) => (
