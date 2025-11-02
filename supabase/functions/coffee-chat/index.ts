@@ -76,7 +76,7 @@ Always be helpful and encouraging in guiding users to find their perfect coffee!
         role: "system",
         content: systemPrompt
       },
-      ...conversationHistory.map((msg) => ({
+      ...(conversationHistory || []).map((msg) => ({
         role: msg.role,
         content: msg.content
       })),
@@ -111,26 +111,39 @@ Always be helpful and encouraging in guiding users to find their perfect coffee!
           }
         ]
       });
+      // Add a dummy model response to acknowledge the system prompt
+      geminiMessages.splice(1, 0, {
+        role: "model",
+        parts: [
+          {
+            text: "Understood! I'm Venessa, ready to help you find your perfect coffee match."
+          }
+        ]
+      });
     }
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${AI_API_KEY}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        contents: geminiMessages,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 500
-        }
-      })
-    });
+    // FIXED: Changed from v1beta to v1
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${AI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          contents: geminiMessages,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 500
+          }
+        })
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Gemini API error:", response.status, errorText);
-
+      
       if (response.status === 429) {
         return new Response(JSON.stringify({
           error: "Rate limit exceeded. Please try again later."
@@ -149,6 +162,18 @@ Always be helpful and encouraging in guiding users to find their perfect coffee!
           error: errorData?.message || "Invalid request. Please check your API key."
         }), {
           status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json"
+          }
+        });
+      }
+
+      if (response.status === 404) {
+        return new Response(JSON.stringify({
+          error: "Model not found. Please verify your API key has access to Gemini 1.5 Flash."
+        }), {
+          status: 404,
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json"
