@@ -71,48 +71,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("🔄 Auth state changed:", event);
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         
         // Check admin role when session changes
-        if (session?.user && mounted) {
-          console.log("🔍 Checking admin role for user:", session.user.id);
-          await checkAdminRole(session.user.id);
-        } else if (mounted) {
+        if (session?.user) {
+          checkAdminRole(session.user.id);
+        } else {
           setIsAdmin(false);
         }
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-      
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        console.log("🔍 Initial admin check for user:", session.user.id);
-        await checkAdminRole(session.user.id);
+        checkAdminRole(session.user.id);
       } else {
         setIsAdmin(false);
       }
       setLoading(false);
     }).catch((error) => {
-      console.error("❌ Error getting session:", error);
-      if (mounted) {
-        setLoading(false);
-      }
+      console.error("Error getting session:", error);
+      setLoading(false);
     });
 
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, [checkAdminRole]);

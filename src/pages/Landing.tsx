@@ -28,44 +28,14 @@ export default function Landing() {
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  // Debug: Log admin status and provide manual refresh
+  // Debug: Log admin status
   useEffect(() => {
     if (user && !authLoading) {
-      console.log("🔍 Admin Status Check:", {
+      console.log("🔍 Admin Status:", {
         userId: user.id,
         email: user.email,
-        isAdmin: isAdmin,
-        timestamp: new Date().toISOString()
+        isAdmin: isAdmin
       });
-      
-      // Add manual refresh function to window for debugging
-      (window as any).refreshAdminStatus = async () => {
-        console.log("🔄 Manual admin status refresh triggered");
-        // Force a re-check by reloading the page
-        window.location.reload();
-      };
-      
-      // Add check admin role function to window
-      (window as any).checkAdminRole = async () => {
-        const { supabase } = await import("@/integrations/supabase/client");
-        const userId = user.id;
-        console.log("🔍 Manual admin check for user:", userId);
-        
-        // Try has_role function
-        const { data: roleCheck, error: functionError } = await supabase
-          .rpc("has_role", { _user_id: userId, _role: "admin" });
-        console.log("has_role result:", roleCheck, "error:", functionError);
-        
-        // Try direct query
-        const { data, error } = await supabase
-          .from("user_roles")
-          .select("*")
-          .eq("user_id", userId)
-          .eq("role", "admin");
-        console.log("Direct query result:", data, "error:", error);
-        
-        return { roleCheck, directQuery: data, errors: { functionError, error } };
-      };
     }
   }, [user, isAdmin, authLoading]);
 
