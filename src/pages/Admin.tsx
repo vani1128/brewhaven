@@ -72,23 +72,67 @@ export default function Admin() {
   });
 
   useEffect(() => {
-    loadData();
-  }, []);
+    let isMounted = true;
 
-  const loadData = async () => {
-    try {
-      await Promise.all([loadCoffees(), loadCategories(), loadStats()]);
-    } catch (error) {
-      console.error("Error loading data:", error);
-      toast({
-        title: "Error Loading Data",
-        description: error instanceof Error ? error.message : "Failed to load admin data. Please refresh the page.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    const loadData = async () => {
+      try {
+        const [coffeesResult, categoriesResult, usersResult, chatsResult, coffeesCountResult] = await Promise.all([
+          supabase.from("coffees").select("*").order("created_at", { ascending: false }),
+          supabase.from("categories").select("*").order("name"),
+          supabase.from("profiles").select("*", { count: "exact", head: true }),
+          supabase.from("chat_history").select("*", { count: "exact", head: true }),
+          supabase.from("coffees").select("*", { count: "exact", head: true }),
+        ]);
+
+        if (!isMounted) return;
+
+        if (coffeesResult.error) {
+          console.error("Error loading coffees:", coffeesResult.error);
+          throw coffeesResult.error;
+        }
+
+        if (categoriesResult.error) {
+          console.error("Error loading categories:", categoriesResult.error);
+          throw categoriesResult.error;
+        }
+
+        setCoffees(coffeesResult.data || []);
+        setCategories(categoriesResult.data || []);
+        setStats({
+          totalUsers: usersResult.count || 0,
+          totalChats: chatsResult.count || 0,
+          totalCoffees: coffeesCountResult.count || 0,
+        });
+
+        if (!categoriesResult.data || categoriesResult.data.length === 0) {
+          toast({
+            title: "No Categories Found",
+            description: "Please create categories first before adding coffees.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        if (!isMounted) return;
+        console.error("Error loading data:", error);
+        toast({
+          title: "Error Loading Data",
+          description: error instanceof Error ? error.message : "Failed to load admin data. Please refresh the page.",
+          variant: "destructive",
+        });
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadCoffees = async () => {
     const { data, error } = await supabase
@@ -98,31 +142,15 @@ export default function Admin() {
 
     if (error) {
       console.error("Error loading coffees:", error);
-      throw error;
+      toast({
+        title: "Error",
+        description: "Failed to reload coffees list.",
+        variant: "destructive",
+      });
+      return;
     }
     setCoffees(data || []);
   };
-
-  const loadCategories = async () => {
-    const { data, error } = await supabase
-      .from("categories")
-      .select("*")
-      .order("name");
-
-    if (error) {
-      console.error("Error loading categories:", error);
-      throw error;
-    }
-    setCategories(data || []);
-    if (!data || data.length === 0) {
-      toast({
-        title: "No Categories Found",
-        description: "Please create categories first before adding coffees.",
-        variant: "destructive",
-      });
-    }
-  };
-
 
   const loadStats = async () => {
     const [usersResult, chatsResult, coffeesResult] = await Promise.all([
