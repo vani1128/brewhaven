@@ -33,9 +33,8 @@ A modern coffee e-commerce platform built with React and Supabase. Browse and or
 - **Loading States**: Smooth loading indicators and error boundaries
 - **Toast Notifications**: User-friendly feedback for all actions
 
-### Optional AI Chat Feature
-- **AI Chat Bot**: Optional chat interface for coffee recommendations (requires Google Gemini API key)
-- **Conversation History**: Chat history persistence (when AI feature is enabled)
+### Coming Soon
+- **AI Chat Bot**: AI-powered chat interface for personalized coffee recommendations (coming soon)
 
 ## Tech Stack
 
@@ -57,9 +56,8 @@ A modern coffee e-commerce platform built with React and Supabase. Browse and or
   - Edge Functions (Deno)
   - Storage (for future image uploads)
 
-### Optional AI Integration
-- **Google Gemini 1.5 Flash** - AI chat recommendations (optional)
-- **RESTful Edge Function** - Secure API endpoint
+### Coming Soon
+- **AI Chat Integration** - AI-powered coffee recommendations (coming soon)
 
 ## Prerequisites
 
@@ -67,8 +65,6 @@ Before you begin, ensure you have:
 
 - **Node.js 18+** and npm installed
 - A **Supabase account** (free tier available)
-- (Optional) A **Google Gemini API key** if you want to enable the AI chat feature
-  - Get one at: https://makersuite.google.com/app/apikey
 
 ## Installation
 
@@ -103,9 +99,9 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
 Quick summary:
 1. Create a new Supabase project
 2. Run `FRESH_SETUP.sql` in Supabase SQL Editor to create all tables and policies
-3. (Optional) Deploy the `coffee-chat` Edge Function if you want AI chat features
-4. (Optional) Set the `AI_API_KEY` secret in Supabase Edge Functions if using AI chat
-5. Add admin role for your user (see BACKEND_SETUP.md)
+3. Add admin role for your user (see BACKEND_SETUP.md)
+
+Note: AI chat feature is coming soon and will be available in a future update.
 
 ### 5. Start Development Server
 
@@ -184,7 +180,6 @@ The app can be deployed to any platform that supports Node.js and static hosting
 - Complete backend setup (see `BACKEND_SETUP.md`)
 - Set environment variables in your hosting platform
 - Update Supabase redirect URLs to your production domain
-- (Optional) If using AI chat: Ensure Edge Function is deployed and `AI_API_KEY` secret is set
 
 ## Security
 
@@ -208,12 +203,6 @@ The app can be deployed to any platform that supports Node.js and static hosting
 ### Database errors?
 - Re-run `FRESH_SETUP.sql` in Supabase SQL Editor
 - Verify all tables and policies were created successfully
-
-### Chat not working?
-- This is an optional feature. If you want to enable it:
-- Verify Edge Function `coffee-chat` is deployed in Supabase
-- Check `AI_API_KEY` secret is set in Supabase Edge Functions
-- Verify environment variables match your Supabase project
 
 ## Contributing
 
