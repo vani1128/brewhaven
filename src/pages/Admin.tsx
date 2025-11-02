@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { Coffee, Plus, Trash2, Edit, ArrowLeft, Users, MessageSquare } from "lucide-react";
+import { Coffee, Plus, Trash2, Edit, ArrowLeft, Users, MessageSquare, ShoppingBag, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { FullPageLoading } from "@/components/LoadingSpinner";
@@ -48,6 +48,35 @@ interface Stats {
   totalUsers: number;
   totalChats: number;
   totalCoffees: number;
+  totalOrders: number;
+}
+
+interface OrderItem {
+  id: string;
+  coffee_id: string;
+  quantity: number;
+  price: number;
+  subtotal: number;
+  coffee: {
+    name: string;
+    image_url: string | null;
+  };
+}
+
+interface Order {
+  id: string;
+  user_id: string;
+  status: string;
+  payment_method: string;
+  shipping_address: string;
+  shipping_city: string;
+  shipping_postal_code: string;
+  shipping_phone: string;
+  total_amount: number;
+  created_at: string;
+  updated_at: string;
+  order_items: OrderItem[];
+  user_email?: string;
 }
 
 export default function Admin() {
@@ -55,7 +84,9 @@ export default function Admin() {
   const { toast } = useToast();
   const [coffees, setCoffees] = useState<Coffee[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalChats: 0, totalCoffees: 0 });
+  const [stats, setStats] = useState<Stats>({ totalUsers: 0, totalChats: 0, totalCoffees: 0, totalOrders: 0 });
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [activeTab, setActiveTab] = useState<"coffees" | "orders">("coffees");
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCoffee, setEditingCoffee] = useState<Coffee | null>(null);
@@ -80,12 +111,13 @@ export default function Admin() {
         setError(null);
         setLoading(true);
 
-        const [coffeesResult, categoriesResult, usersResult, chatsResult, coffeesCountResult] = await Promise.all([
+        const [coffeesResult, categoriesResult, usersResult, chatsResult, coffeesCountResult, ordersCountResult] = await Promise.all([
           supabase.from("coffees").select("*").order("created_at", { ascending: false }),
           supabase.from("categories").select("*").order("name"),
           supabase.from("profiles").select("*", { count: "exact", head: true }),
           supabase.from("chat_history").select("*", { count: "exact", head: true }),
           supabase.from("coffees").select("*", { count: "exact", head: true }),
+          supabase.from("orders").select("*", { count: "exact", head: true }),
         ]);
 
         if (cancelled) return;
@@ -101,11 +133,12 @@ export default function Admin() {
         setCoffees(coffeesResult.data || []);
         setCategories(categoriesResult.data || []);
 
-        if (usersResult.count !== null && chatsResult.count !== null && coffeesCountResult.count !== null) {
+        if (usersResult.count !== null && chatsResult.count !== null && coffeesCountResult.count !== null && ordersCountResult.count !== null) {
           setStats({
             totalUsers: usersResult.count,
             totalChats: chatsResult.count,
             totalCoffees: coffeesCountResult.count,
+            totalOrders: ordersCountResult.count,
           });
         }
 
@@ -291,6 +324,101 @@ export default function Admin() {
     });
   };
 
+  const loadOrders = async () => {
+    try {
+      // Load orders with items
+      const { data: ordersData, error: ordersError } = await supabase
+        .from("orders")
+        .select(`
+          *,
+          order_items (
+            *,
+            coffee:coffees (name, image_url)
+          )
+        `)
+        .order("created_at", { ascending: false });
+
+      if (ordersError) throw ordersError;
+
+      // Get user emails
+      const userIds = [...new Set((ordersData || []).map((o: any) => o.user_id))];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, email")
+        .in("id", userIds);
+
+      // Create email map
+      const emailMap = new Map((profilesData || []).map((p: any) => [p.id, p.email]));
+
+      // Format orders with user email
+      const formattedOrders = (ordersData || []).map((order: any) => ({
+        ...order,
+        user_email: emailMap.get(order.user_id) || "Unknown"
+      }));
+
+      setOrders(formattedOrders);
+    } catch (error) {
+      console.error("Error loading orders:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load orders",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: newStatus })
+        .eq("id", orderId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Order status updated to ${newStatus.replace("_", " ")}`,
+      });
+
+      // Reload orders
+      loadOrders();
+    } catch (error: any) {
+      console.error("Error updating order status:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update order status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400";
+      case "confirmed":
+        return "bg-blue-500/10 text-blue-600 dark:text-blue-400";
+      case "processing":
+        return "bg-purple-500/10 text-purple-600 dark:text-purple-400";
+      case "out_for_delivery":
+        return "bg-orange-500/10 text-orange-600 dark:text-orange-400";
+      case "delivered":
+        return "bg-green-500/10 text-green-600 dark:text-green-400";
+      case "cancelled":
+        return "bg-red-500/10 text-red-600 dark:text-red-400";
+      default:
+        return "bg-gray-500/10 text-gray-600 dark:text-gray-400";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    return status
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
 
   if (loading) {
     return <FullPageLoading />;
@@ -332,7 +460,7 @@ export default function Admin() {
 
       <div className="container mx-auto px-4 py-12 max-w-6xl space-y-8">
         {/* Stats */}
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-4 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -362,6 +490,37 @@ export default function Admin() {
               <div className="text-2xl font-bold">{stats.totalCoffees}</div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+              <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalOrders}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-4 border-b border-border">
+          <Button
+            variant={activeTab === "coffees" ? "default" : "ghost"}
+            onClick={() => setActiveTab("coffees")}
+          >
+            <Coffee className="h-4 w-4 mr-2" />
+            Coffee Management
+          </Button>
+          <Button
+            variant={activeTab === "orders" ? "default" : "ghost"}
+            onClick={() => {
+              setActiveTab("orders");
+              loadOrders();
+            }}
+          >
+            <ShoppingBag className="h-4 w-4 mr-2" />
+            Order Management
+          </Button>
         </div>
 
         {/* Coffee Management */}
@@ -607,6 +766,135 @@ export default function Admin() {
             </div>
           </CardContent>
         </Card>
+        )}
+
+        {/* Order Management */}
+        {activeTab === "orders" && (
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle>Order Management</CardTitle>
+              <CardDescription>View and manage all customer orders</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {orders.length === 0 ? (
+                  <div className="text-center py-12">
+                    <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">No orders yet</h3>
+                    <p className="text-muted-foreground">
+                      Orders will appear here when customers place them.
+                    </p>
+                  </div>
+                ) : (
+                  orders.map((order) => (
+                    <Card key={order.id} className="overflow-hidden">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <CardTitle className="flex items-center gap-2">
+                              Order #{order.id.slice(0, 8).toUpperCase()}
+                              <Badge className={getStatusColor(order.status)}>
+                                {getStatusLabel(order.status)}
+                              </Badge>
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Customer: {order.user_email || "Unknown"}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Placed on: {new Date(order.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold">₹{order.total_amount.toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground">{order.payment_method}</p>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {/* Order Items */}
+                        <div>
+                          <h4 className="font-semibold mb-2">Items:</h4>
+                          <div className="space-y-2">
+                            {order.order_items?.map((item) => (
+                              <div
+                                key={item.id}
+                                className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg"
+                              >
+                                <div className="w-16 h-16 bg-gradient-to-br from-[hsl(25_50%_25%)] to-[hsl(35_60%_55%)] rounded-lg flex items-center justify-center flex-shrink-0">
+                                  {item.coffee?.image_url ? (
+                                    <img
+                                      src={item.coffee.image_url}
+                                      alt={item.coffee.name}
+                                      className="w-full h-full object-cover rounded-lg"
+                                    />
+                                  ) : (
+                                    <Coffee className="h-8 w-8 text-primary-foreground/20" />
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-semibold">{item.coffee?.name || "Unknown"}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Qty: {item.quantity} × ₹{item.price.toFixed(2)}
+                                  </p>
+                                </div>
+                                <p className="font-semibold">₹{item.subtotal.toFixed(2)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Delivery Address */}
+                        <div className="border-t pt-4">
+                          <h4 className="font-semibold mb-2">Delivery Address:</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {order.shipping_address}, {order.shipping_city} {order.shipping_postal_code}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Phone: {order.shipping_phone}
+                          </p>
+                        </div>
+
+                        {/* Status Update */}
+                        <div className="border-t pt-4 flex items-center justify-between">
+                          <div>
+                            <Label htmlFor={`status-${order.id}`} className="mb-2 block">
+                              Update Status:
+                            </Label>
+                            <Select
+                              value={order.status}
+                              onValueChange={(value) => updateOrderStatus(order.id, value)}
+                            >
+                              <SelectTrigger className="w-[200px]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="confirmed">Confirmed</SelectItem>
+                                <SelectItem value="processing">Processing</SelectItem>
+                                <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                                <SelectItem value="delivered">Delivered</SelectItem>
+                                <SelectItem value="cancelled">Cancelled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => updateOrderStatus(order.id, "confirmed")}
+                            disabled={order.status === "confirmed"}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Confirm Order
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
