@@ -865,7 +865,7 @@ export default function Admin() {
                             </Label>
                             <Select
                               value={order.status}
-                              onValueChange={(value) => updateOrderStatus(order.id, value)}
+                              onValueChange={(value) => updateOrderStatus(order.id, value as "pending" | "confirmed" | "processing" | "out_for_delivery" | "delivered" | "cancelled")}
                             >
                               <SelectTrigger className="w-[200px]">
                                 <SelectValue />
