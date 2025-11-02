@@ -109,12 +109,38 @@ export default function Chat() {
         content: m.content
       }));
 
+      // 🔍 DEBUG: Log what we're sending
+      const requestPayload = {
+        message: userMessage,
+        conversationHistory: conversationHistory
+      };
+      
+      console.log("🔍 DEBUG: Request payload:");
+      console.log("- message type:", typeof userMessage);
+      console.log("- message value:", userMessage);
+      console.log("- message length:", userMessage.length);
+      console.log("- conversationHistory type:", typeof conversationHistory);
+      console.log("- conversationHistory is array:", Array.isArray(conversationHistory));
+      console.log("- conversationHistory length:", conversationHistory.length);
+      console.log("- Full payload:", JSON.stringify(requestPayload, null, 2));
+
+      // Check for common issues
+      if (typeof userMessage !== 'string') {
+        console.error("❌ ERROR: message is not a string!");
+      }
+      if (!Array.isArray(conversationHistory)) {
+        console.error("❌ ERROR: conversationHistory is not an array!");
+      }
+      
+      console.log("📤 Calling edge function: coffee-chat");
+
       const { data, error } = await supabase.functions.invoke("coffee-chat", {
-        body: {
-          message: userMessage,
-          conversationHistory: conversationHistory
-        }
+        body: requestPayload
       });
+
+      console.log("📥 Response received");
+      console.log("- error:", error);
+      console.log("- data:", data);
 
       if (error) {
         // Parse error details
