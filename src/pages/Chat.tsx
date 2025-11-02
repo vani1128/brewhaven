@@ -4,10 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Send, Coffee, Loader2, ArrowLeft } from "lucide-react";
+import { Send, Coffee, Loader2, ArrowLeft, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { LoadingSpinner, FullPageLoading } from "@/components/LoadingSpinner";
+import { FullPageLoading } from "@/components/LoadingSpinner";
 import { ChatDiagnostic } from "@/components/ChatDiagnostic";
 
 interface Message {
@@ -22,6 +22,7 @@ export default function Chat() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -103,16 +104,19 @@ export default function Chat() {
     setMessages((prev) => [...prev, userMsg]);
 
     try {
-      // Call edge function using Supabase client (handles CORS and auth automatically)
+      // Format conversation history properly for Gemini
+      const conversationHistory = messages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
       console.log("Calling edge function: coffee-chat");
+      console.log("Conversation history length:", conversationHistory.length);
       
       const { data, error } = await supabase.functions.invoke("coffee-chat", {
         body: {
           message: userMessage,
-          conversationHistory: messages.map(m => ({
-            role: m.role,
-            content: m.content
-          }))
+          conversationHistory: conversationHistory
         }
       });
 
@@ -120,12 +124,11 @@ export default function Chat() {
         console.error("Edge function error:", error);
         console.error("Full error object:", JSON.stringify(error, null, 2));
         
-        // Check for specific error context
+        // Parse error details
         const errorContext = (error as any)?.context;
         const statusCode = errorContext?.status || (error as any)?.status;
         const errorBody = errorContext?.body || (error as any)?.body;
         
-        // Try to parse error message from various possible locations
         let actualError = error.message || "Unknown error";
         if (typeof errorBody === "string") {
           try {
@@ -140,29 +143,37 @@ export default function Chat() {
           actualError = typeof errorBody === "string" ? errorBody : JSON.stringify(errorBody);
         }
         
-        // Provide more specific error messages
+        // Specific error handling with helpful messages
         if (error.message?.includes("Function not found") || error.message?.includes("404") || statusCode === 404) {
-          throw new Error("Edge function 'coffee-chat' is not deployed. Please deploy it in Supabase Dashboard → Edge Functions. See FIX_CORS_ERROR.md for instructions.");
+          if (actualError.includes("models/gemini-1.5-flash is not found")) {
+            throw new Error("❌ Gemini API Error: The model endpoint has changed. Please redeploy your edge function with the updated code (using v1 instead of v1beta).");
+          }
+          throw new Error("Edge function 'coffee-chat' is not deployed. Please deploy it in Supabase Dashboard → Edge Functions.");
         }
         
         if (error.message?.includes("Network") || error.message?.includes("Failed to fetch")) {
-          throw new Error("Cannot connect to chat service. The edge function may not be deployed. Please check Supabase Dashboard → Edge Functions and ensure 'coffee-chat' exists.");
+          throw new Error("Cannot connect to chat service. The edge function may not be deployed. Please check Supabase Dashboard → Edge Functions.");
         }
         
-        // If we have a status code, check what it means
         if (statusCode === 500) {
           if (actualError?.includes("AI_API_KEY") || actualError?.includes("AI service not configured")) {
             throw new Error("❌ AI_API_KEY secret is missing! Go to Supabase Dashboard → Edge Functions → Secrets → Add 'AI_API_KEY' with your Gemini API key. Get it from https://makersuite.google.com/app/apikey");
           }
-          throw new Error(`❌ Server error (500): ${actualError || error.message || "Unknown error. Check Supabase Dashboard → Edge Functions → coffee-chat → Logs tab for details."}`);
+          if (actualError?.includes("models/gemini-1.5-flash is not found")) {
+            throw new Error("❌ Gemini API Error: Model not found. Please update your edge function to use the v1 API endpoint instead of v1beta.");
+          }
+          throw new Error(`❌ Server error: ${actualError || "Check Supabase Dashboard → Edge Functions → coffee-chat → Logs for details."}`);
         }
         
         if (statusCode === 400) {
-          throw new Error(`❌ Bad request (400): ${actualError || error.message || "Check your request format."}`);
+          throw new Error(`❌ Bad request: ${actualError || "Invalid request format."}`);
         }
         
-        // Generic non-2xx error
-        throw new Error(`❌ Error (Status ${statusCode || "unknown"}): ${actualError || error.message || "Check Supabase Dashboard → Edge Functions → coffee-chat → Logs for details."}`);
+        if (statusCode === 429) {
+          throw new Error("❌ Rate limit exceeded. Please wait a moment and try again.");
+        }
+        
+        throw new Error(`❌ Error (${statusCode || "unknown"}): ${actualError || "Check Supabase logs for details."}`);
       }
 
       if (!data || !data.response) {
@@ -187,6 +198,9 @@ export default function Chat() {
         bot_response: botResponse,
       });
 
+      // Reset retry count on success
+      setRetryCount(0);
+
     } catch (error) {
       console.error("Chat error:", error);
       let errorMessage = "Failed to get response. Please try again.";
@@ -196,11 +210,13 @@ export default function Chat() {
         
         // Provide specific help based on error type
         if (error.message.includes("Failed to fetch") || error.message.includes("NetworkError") || error.message.includes("Network error")) {
-          errorMessage = "Unable to connect to the chat service. The edge function may not be deployed. Please check Supabase Edge Functions and ensure 'coffee-chat' is deployed. See CHATBOT_DEPLOYMENT.md for help.";
+          errorMessage = "Unable to connect to the chat service. The edge function may not be deployed. Please check Supabase Edge Functions and ensure 'coffee-chat' is deployed.";
         } else if (error.message.includes("AI service not configured")) {
-          errorMessage = "AI service not configured. Please set AI_API_KEY in Supabase secrets. See FREE_AI_SETUP.md for instructions.";
+          errorMessage = "AI service not configured. Please set AI_API_KEY in Supabase secrets with your Gemini API key.";
         } else if (error.message.includes("Supabase configuration")) {
           errorMessage = "Missing Supabase configuration. Please check VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY are set.";
+        } else if (error.message.includes("models/gemini-1.5-flash is not found") || error.message.includes("v1beta")) {
+          errorMessage = "❌ API Version Error: Your edge function needs to be updated to use Gemini's v1 API instead of v1beta. Please redeploy with the fixed code.";
         }
       }
       
@@ -208,11 +224,13 @@ export default function Chat() {
         title: "Chat Error",
         description: errorMessage,
         variant: "destructive",
-        duration: 10000, // Show longer so user can read it
+        duration: 10000,
       });
       
       // Remove the user message if the request failed
       setMessages((prev) => prev.filter(msg => msg.id !== userMsg.id));
+      
+      setRetryCount(prev => prev + 1);
     } finally {
       setLoading(false);
     }
@@ -231,10 +249,16 @@ export default function Chat() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <Coffee className="h-8 w-8 text-primary" />
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold text-foreground">Venessa</h1>
             <p className="text-sm text-muted-foreground">Your AI Barista</p>
           </div>
+          {retryCount > 2 && (
+            <div className="flex items-center gap-2 text-sm text-yellow-600 dark:text-yellow-500">
+              <AlertCircle className="h-4 w-4" />
+              <span>Connection issues detected</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -246,9 +270,32 @@ export default function Chat() {
               <div className="text-center py-12">
                 <Coffee className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h2 className="text-2xl font-semibold mb-2">Start Your Coffee Journey</h2>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground mb-4">
                   Ask me anything about coffee! I can recommend drinks based on your taste.
                 </p>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setInput("I want something strong and bold")}
+                  >
+                    Strong & Bold
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setInput("I prefer sweet and creamy drinks")}
+                  >
+                    Sweet & Creamy
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setInput("What's a good cold coffee for summer?")}
+                  >
+                    Cold Coffee
+                  </Button>
+                </div>
               </div>
               <ChatDiagnostic />
             </>
