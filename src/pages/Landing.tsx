@@ -22,11 +22,23 @@ interface CoffeeProduct {
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { user, signOut, isAdmin } = useAuth();
+  const { user, signOut, isAdmin, loading: authLoading } = useAuth();
   const { totalItems } = useCart();
   const [featuredProducts, setFeaturedProducts] = useState<CoffeeProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Debug: Log admin status
+  useEffect(() => {
+    if (user && !authLoading) {
+      console.log("🔍 Admin Status Check:", {
+        userId: user.id,
+        email: user.email,
+        isAdmin: isAdmin,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [user, isAdmin, authLoading]);
 
   useEffect(() => {
     loadFeaturedProducts();
@@ -92,16 +104,23 @@ export default function Landing() {
                 <Button variant="ghost" onClick={() => navigate("/profile")}>
                   Profile
                 </Button>
-                {isAdmin && (
-                  <Button 
-                    variant="default" 
-                    onClick={() => navigate("/admin")}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    <Coffee className="h-4 w-4 mr-2" />
-                    Admin Panel
-                  </Button>
-                )}
+                <Button 
+                  variant={isAdmin ? "default" : "outline"} 
+                  onClick={() => {
+                    if (isAdmin) {
+                      navigate("/admin");
+                    } else {
+                      console.log("Admin status:", isAdmin);
+                      console.log("User:", user?.id);
+                      alert("You need admin privileges. Please run SETUP_ADMIN.sql in Supabase SQL Editor with your email.");
+                    }
+                  }}
+                  className={isAdmin ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}
+                  disabled={!isAdmin}
+                >
+                  <Coffee className="h-4 w-4 mr-2" />
+                  {isAdmin ? "Admin Panel" : "Admin (No Access)"}
+                </Button>
                 <Button variant="outline" onClick={async () => {
                   await signOut();
                   navigate("/auth");
@@ -207,18 +226,21 @@ export default function Landing() {
                       >
                         Profile
                       </Button>
-                      {isAdmin && (
-                        <Button 
-                          variant="ghost" 
-                          className="justify-start"
-                          onClick={() => {
+                      <Button 
+                        variant={isAdmin ? "ghost" : "outline"} 
+                        className="justify-start"
+                        onClick={() => {
+                          if (isAdmin) {
                             navigate("/admin");
                             setMobileMenuOpen(false);
-                          }}
-                        >
-                          Admin
-                        </Button>
-                      )}
+                          } else {
+                            alert("You need admin privileges. Please run SETUP_ADMIN.sql in Supabase SQL Editor with your email.");
+                          }
+                        }}
+                        disabled={!isAdmin}
+                      >
+                        {isAdmin ? "Admin Panel" : "Admin (No Access)"}
+                      </Button>
                       <Button 
                         variant="outline" 
                         className="justify-start"
