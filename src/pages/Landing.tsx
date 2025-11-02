@@ -104,23 +104,16 @@ export default function Landing() {
                 <Button variant="ghost" onClick={() => navigate("/profile")}>
                   Profile
                 </Button>
-                <Button 
-                  variant={isAdmin ? "default" : "outline"} 
-                  onClick={() => {
-                    if (isAdmin) {
-                      navigate("/admin");
-                    } else {
-                      console.log("Admin status:", isAdmin);
-                      console.log("User:", user?.id);
-                      alert("You need admin privileges. Please run SETUP_ADMIN.sql in Supabase SQL Editor with your email.");
-                    }
-                  }}
-                  className={isAdmin ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}
-                  disabled={!isAdmin}
-                >
-                  <Coffee className="h-4 w-4 mr-2" />
-                  {isAdmin ? "Admin Panel" : "Admin (No Access)"}
-                </Button>
+                {isAdmin && (
+                  <Button 
+                    variant="default" 
+                    onClick={() => navigate("/admin")}
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Coffee className="h-4 w-4 mr-2" />
+                    Admin Panel
+                  </Button>
+                )}
                 <Button variant="outline" onClick={async () => {
                   await signOut();
                   navigate("/auth");
@@ -226,21 +219,19 @@ export default function Landing() {
                       >
                         Profile
                       </Button>
-                      <Button 
-                        variant={isAdmin ? "ghost" : "outline"} 
-                        className="justify-start"
-                        onClick={() => {
-                          if (isAdmin) {
+                      {isAdmin && (
+                        <Button 
+                          variant="ghost" 
+                          className="justify-start"
+                          onClick={() => {
                             navigate("/admin");
                             setMobileMenuOpen(false);
-                          } else {
-                            alert("You need admin privileges. Please run SETUP_ADMIN.sql in Supabase SQL Editor with your email.");
-                          }
-                        }}
-                        disabled={!isAdmin}
-                      >
-                        {isAdmin ? "Admin Panel" : "Admin (No Access)"}
-                      </Button>
+                          }}
+                        >
+                          <Coffee className="h-4 w-4 mr-2" />
+                          Admin Panel
+                        </Button>
+                      )}
                       <Button 
                         variant="outline" 
                         className="justify-start"

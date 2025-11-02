@@ -23,7 +23,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAdminRole = useCallback(async (userId: string) => {
     try {
-      // Method 1: Check via user_roles table
+      // Method 1: Use has_role function (SECURITY DEFINER - bypasses RLS)
+      const { data: roleCheck, error: functionError } = await supabase
+        .rpc("has_role", { _user_id: userId, _role: "admin" });
+      
+      if (!functionError && roleCheck === true) {
+        console.log("✅ Admin role confirmed via has_role function for user:", userId);
+        setIsAdmin(true);
+        return;
+      }
+
+      if (functionError) {
+        console.warn("has_role function error (trying direct query):", functionError);
+      }
+
+      // Method 2: Fallback - Check via user_roles table directly
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
@@ -32,35 +46,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (error) {
-        console.error("Error checking admin role from user_roles:", error);
-        // Try alternative method using has_role function
-        try {
-          const { data: roleCheck, error: functionError } = await supabase
-            .rpc("has_role", { _user_id: userId, _role: "admin" });
-          
-          if (!functionError && roleCheck) {
-            console.log("Admin role confirmed via has_role function");
-            setIsAdmin(true);
-            return;
-          } else {
-            console.error("Error checking admin role via has_role function:", functionError);
-          }
-        } catch (funcError) {
-          console.error("has_role function not available or error:", funcError);
-        }
+        console.error("❌ Error checking admin role from user_roles:", error);
+        console.error("Error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         setIsAdmin(false);
         return;
       }
 
       if (data) {
-        console.log("Admin role found:", data);
+        console.log("✅ Admin role found in user_roles table:", data);
         setIsAdmin(true);
       } else {
-        console.log("No admin role found for user:", userId);
+        console.log("ℹ️ No admin role found for user:", userId);
         setIsAdmin(false);
       }
     } catch (error) {
-      console.error("Error checking admin role:", error);
+      console.error("❌ Exception checking admin role:", error);
       setIsAdmin(false);
     }
   }, []);
