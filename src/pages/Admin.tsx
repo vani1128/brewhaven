@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
-import { Coffee, Plus, Trash2, Edit, ArrowLeft, Users, MessageSquare, ShoppingBag, CheckCircle } from "lucide-react";
+import { Coffee, Plus, Trash2, Edit, ArrowLeft, Users, MessageSquare, ShoppingBag, CheckCircle, RefreshCw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { FullPageLoading } from "@/components/LoadingSpinner";
@@ -167,7 +167,19 @@ export default function Admin() {
     return () => {
       cancelled = true;
     };
-  }, [toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load orders when orders tab becomes active
+  useEffect(() => {
+    if (activeTab === "orders") {
+      loadOrders();
+    } else {
+      // Clear orders when switching away from orders tab
+      setOrders([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const loadCoffees = async () => {
     const { data, error } = await supabase
@@ -520,10 +532,7 @@ export default function Admin() {
           </Button>
           <Button
             variant={activeTab === "orders" ? "default" : "ghost"}
-            onClick={() => {
-              setActiveTab("orders");
-              loadOrders();
-            }}
+            onClick={() => setActiveTab("orders")}
           >
             <ShoppingBag className="h-4 w-4 mr-2" />
             Order Management
@@ -780,8 +789,20 @@ export default function Admin() {
         {activeTab === "orders" && (
           <Card className="border-2">
             <CardHeader>
-              <CardTitle>Order Management</CardTitle>
-              <CardDescription>View and manage all customer orders</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Order Management</CardTitle>
+                  <CardDescription>View and manage all customer orders</CardDescription>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => loadOrders()}
+                  title="Refresh orders"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
