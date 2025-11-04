@@ -355,18 +355,31 @@ export default function Admin() {
 
       if (ordersError) throw ordersError;
 
-      // Get user profiles with full details
-      const userIds = [...new Set((ordersData || []).map((o: any) => o.user_id))];
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id, email, full_name")
-        .in("id", userIds);
+      // Filter out orders that have no items (empty order_items array)
+      const validOrders = (ordersData || []).filter((order: any) => 
+        order.order_items && Array.isArray(order.order_items) && order.order_items.length > 0
+      );
 
-      // Create profile map
-      const profileMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+      // Get user profiles with full details (handle errors gracefully)
+      const userIds = [...new Set(validOrders.map((o: any) => o.user_id))];
+      let profileMap = new Map();
+      
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, email, full_name")
+          .in("id", userIds);
+
+        if (profilesError) {
+          console.warn("Failed to load profiles (non-critical):", profilesError);
+          // Continue without profile data - not critical
+        } else {
+          profileMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+        }
+      }
 
       // Format orders with user details
-      const formattedOrders = (ordersData || []).map((order: any) => {
+      const formattedOrders = validOrders.map((order: any) => {
         const profile = profileMap.get(order.user_id);
         return {
           ...order,
@@ -383,6 +396,7 @@ export default function Admin() {
         description: "Failed to load orders",
         variant: "destructive",
       });
+      setOrders([]); // Clear orders on error
     }
   };
 
